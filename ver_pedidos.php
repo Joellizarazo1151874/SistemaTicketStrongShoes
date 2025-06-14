@@ -10,7 +10,10 @@ $where = "1=1";
 $params = [];
 $types = "";
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search'])) {
+// Si no hay búsqueda activa, mostrar solo los pedidos del día actual
+if (!isset($_GET['search'])) {
+    $where .= " AND DATE(fecha) = CURDATE()";
+} else {
     if (!empty($_GET['cliente'])) {
         $where .= " AND cliente LIKE ?";
         $params[] = "%" . $_GET['cliente'] . "%";
@@ -47,6 +50,16 @@ if (!empty($params)) {
 $stmt->execute();
 $result = $stmt->get_result();
 $pedidos = $result->fetch_all(MYSQLI_ASSOC);
+
+// Agrupar pedidos por fecha
+$pedidos_por_fecha = [];
+foreach ($pedidos as $pedido) {
+    $fecha = date('Y-m-d', strtotime($pedido['fecha']));
+    if (!isset($pedidos_por_fecha[$fecha])) {
+        $pedidos_por_fecha[$fecha] = [];
+    }
+    $pedidos_por_fecha[$fecha][] = $pedido;
+}
 
 // Generar PDF
 if (isset($_GET['pdf']) && isset($_GET['id'])) {
@@ -91,22 +104,32 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
             .ticket-info {
                 margin-bottom: 1mm;
                 font-size: 8pt;
+                text-align: left;
             }
             .ticket-info table {
                 width: 100%;
                 border-collapse: collapse;
+                margin: 0 auto;
             }
             .ticket-info td {
                 border: 1px solid #000;
                 padding: 0.5mm 1mm;
+                text-align: left;
+            }
+            .obs-cell {
+                min-height: 37.5mm;
+                height: 37.5mm;
+                vertical-align: top;
             }
             .ticket-info .label {
                 background: #f0f0f0;
                 font-weight: bold;
                 width: 25%;
+                text-align: left;
             }
             .ticket-info .value {
                 width: 25%;
+                text-align: left;
             }
             .tallas-section {
                 margin-bottom: 1mm;
@@ -170,7 +193,7 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
                     <td><strong>Cliente:</strong> ' . $pedido['cliente'] . '</td>
                 </tr>
                 <tr>
-                    <td colspan="2"><strong>Obs:</strong> ' . $pedido['observaciones'] . '</td>
+                    <td colspan="2" class="obs-cell"><strong>Obs:</strong> ' . $pedido['observaciones'] . '<br><br><br></td>
                 </tr>
             </table>
         </div>';
@@ -848,79 +871,163 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
                             <p>Intenta ajustar los filtros de búsqueda o crea un nuevo pedido.</p>
                         </div>
                     <?php else: ?>
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Fecha</th>
-                                    <th>Tique</th>
-                                    <th>Cliente</th>
-                                    <th>Referencia</th>
-                                    <th>Tipo</th>
-                                    <th>Cantidad</th>
-                                    <th class="text-end">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($pedidos as $pedido): ?>
-                                <tr>
-                                    <td>
-                                        <span class="fw-bold">#<?php echo $pedido['id']; ?></span>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-calendar-alt me-2 text-muted"></i>
-                                        <?php echo date('d/m/Y', strtotime($pedido['fecha'])); ?>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-ticket-alt me-2 text-muted"></i>
-                                        <?php echo htmlspecialchars($pedido['tique']); ?>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-user me-2 text-muted"></i>
-                                        <?php echo htmlspecialchars($pedido['cliente']); ?>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-tag me-2 text-muted"></i>
-                                        <?php echo htmlspecialchars($pedido['ref']); ?>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-active">
-                                            <?php echo ucfirst($pedido['tipo_calzado']); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-box me-2 text-muted"></i>
-                                        <?php echo $pedido['cantidad']; ?> pares
-                                    </td>
-                                    <td class="action-buttons">
-                                        <a href="?pdf=1&id=<?php echo $pedido['id']; ?>" 
-                                           class="btn btn-primary btn-sm" 
-                                           title="Imprimir Ticket"
-                                           target="_blank">
-                                            <i class="fas fa-print"></i>
-                                        </a>
-                                        <a href="editar_pedido.php?id=<?php echo $pedido['id']; ?>" 
-                                           class="btn btn-outline-primary btn-sm"
-                                           title="Editar Pedido">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="eliminar_pedido.php?id=<?php echo $pedido['id']; ?>" 
-                                           class="btn btn-outline-danger btn-sm"
-                                           title="Eliminar Pedido"
-                                           onclick="return confirm('¿Está seguro de eliminar este pedido?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                        <?php foreach ($pedidos_por_fecha as $fecha => $pedidos_dia): ?>
+                            <div class="fecha-grupo mb-4">
+                                <div class="fecha-header bg-light p-3 mb-2 d-flex justify-content-between align-items-center">
+                                    <h5 class="m-0">
+                                        <i class="fas fa-calendar-day me-2"></i>
+                                        <?php echo date('d/m/Y', strtotime($fecha)); ?>
+                                        <span class="badge bg-primary ms-2"><?php echo count($pedidos_dia); ?> pedidos</span>
+                                    </h5>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input select-day" data-date="<?php echo $fecha; ?>" id="selectDay_<?php echo $fecha; ?>">
+                                        <label class="form-check-label" for="selectDay_<?php echo $fecha; ?>">Seleccionar todos del día</label>
+                                    </div>
+                                </div>
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px;">
+                                                <?php if ($fecha === array_key_first($pedidos_por_fecha)): ?>
+                                                <input type="checkbox" class="form-check-input" id="selectAll" title="Seleccionar todos los pedidos">
+                                                <?php endif; ?>
+                                            </th>
+                                            <th>ID</th>
+                                            <th>Hora</th>
+                                            <th>Tique</th>
+                                            <th>Cliente</th>
+                                            <th>Referencia</th>
+                                            <th>Tipo</th>
+                                            <th>Cantidad</th>
+                                            <th class="text-end">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($pedidos_dia as $pedido): ?>
+                                        <tr>
+                                            <td><input type="checkbox" class="form-check-input pedido-checkbox" data-date="<?php echo $fecha; ?>" value="<?php echo $pedido['id']; ?>"></td>
+                                            <td>
+                                                <span class="fw-bold">#<?php echo $pedido['id']; ?></span>
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-clock me-2 text-muted"></i>
+                                                <?php echo date('H:i', strtotime($pedido['fecha'])); ?>
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-ticket-alt me-2 text-muted"></i>
+                                                <?php echo htmlspecialchars($pedido['tique']); ?>
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-user me-2 text-muted"></i>
+                                                <?php echo htmlspecialchars($pedido['cliente']); ?>
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-tag me-2 text-muted"></i>
+                                                <?php echo htmlspecialchars($pedido['ref']); ?>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge status-active">
+                                                    <?php echo ucfirst($pedido['tipo_calzado']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-box me-2 text-muted"></i>
+                                                <?php echo $pedido['cantidad']; ?> pares
+                                            </td>
+                                            <td class="action-buttons">
+                                                <a href="?pdf=1&id=<?php echo $pedido['id']; ?>" 
+                                                   class="btn btn-primary btn-sm" 
+                                                   title="Imprimir Ticket"
+                                                   target="_blank">
+                                                    <i class="fas fa-print"></i>
+                                                </a>
+                                                <a href="editar_pedido.php?id=<?php echo $pedido['id']; ?>" 
+                                                   class="btn btn-outline-primary btn-sm"
+                                                   title="Editar Pedido">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="eliminar_pedido.php?id=<?php echo $pedido['id']; ?>" 
+                                                   class="btn btn-outline-danger btn-sm"
+                                                   title="Eliminar Pedido"
+                                                   onclick="return confirm('¿Está seguro de eliminar este pedido?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="container mb-4">
+        <div class="d-flex justify-content-end">
+            <button id="imprimirSeleccionados" class="btn btn-primary">
+                <i class="fas fa-print me-2"></i> 
+                Imprimir Tickets Seleccionados
+            </button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Seleccionar/deseleccionar todos
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.pedido-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            // También actualizar los checkboxes de días
+            document.querySelectorAll('.select-day').forEach(dayCheckbox => {
+                dayCheckbox.checked = this.checked;
+            });
+        });
+
+        // Seleccionar/deseleccionar por día
+        document.querySelectorAll('.select-day').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const fecha = this.dataset.date;
+                const checkboxes = document.querySelectorAll(`.pedido-checkbox[data-date="${fecha}"]`);
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                
+                // Verificar si todos los días están seleccionados
+                const todosLosDias = document.querySelectorAll('.select-day');
+                const todosSeleccionados = Array.from(todosLosDias).every(cb => cb.checked);
+                document.getElementById('selectAll').checked = todosSeleccionados;
+            });
+        });
+
+        // Actualizar estado de checkboxes padre cuando se cambian los individuales
+        document.querySelectorAll('.pedido-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const fecha = this.dataset.date;
+                const checkboxesDia = document.querySelectorAll(`.pedido-checkbox[data-date="${fecha}"]`);
+                const todosSeleccionadosDia = Array.from(checkboxesDia).every(cb => cb.checked);
+                const selectDayCheckbox = document.querySelector(`.select-day[data-date="${fecha}"]`);
+                if (selectDayCheckbox) {
+                    selectDayCheckbox.checked = todosSeleccionadosDia;
+                }
+
+                // Verificar si todos los pedidos están seleccionados
+                const todosPedidos = document.querySelectorAll('.pedido-checkbox');
+                const todosSeleccionados = Array.from(todosPedidos).every(cb => cb.checked);
+                document.getElementById('selectAll').checked = todosSeleccionados;
+            });
+        });
+
+        // Imprimir seleccionados
+        document.getElementById('imprimirSeleccionados').addEventListener('click', function() {
+            const seleccionados = Array.from(document.querySelectorAll('.pedido-checkbox:checked')).map(cb => cb.value);
+            if (seleccionados.length === 0) {
+                alert('Selecciona al menos un pedido para imprimir.');
+                return;
+            }
+            // Redirigir a imprimir_tickets.php con los IDs seleccionados
+            window.open('imprimir_tickets.php?ids=' + seleccionados.join(','), '_blank');
+        });
+    </script>
 </body>
-</html> 
+</html>

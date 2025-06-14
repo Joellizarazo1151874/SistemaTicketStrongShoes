@@ -15,29 +15,48 @@ $next_id = $row['max_id'] ? $row['max_id'] + 1 : 1;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = $_POST['id'];
     $fecha = $_POST['fecha'];
-    $tique = $next_tique; // Usar el siguiente número de tique
-    $cliente = $_POST['cliente'];
-    $ref = $_POST['ref'];
-    $color = $_POST['color'];
-    $observaciones = $_POST['observaciones'];
-    $tipo_calzado = $_POST['tipo_calzado'];
-    $marquilla = $_POST['marquilla'];
-    $suela = $_POST['suela'];
-    $ciudad = $_POST['ciudad'];
-    $cantidad = $_POST['cantidad'];
-    $tallas = json_encode($_POST['tallas']);
+    $num_copias = isset($_POST['num_copias']) ? intval($_POST['num_copias']) : 1;
+    $cliente = $_POST['cliente'] ?? '';
+    $ref = $_POST['ref'] ?? '';
+    $color = $_POST['color'] ?? '';
+    $observaciones = $_POST['observaciones'] ?? '';
+    $tipo_calzado = $_POST['tipo_calzado'] ?? '';
+    $marquilla = $_POST['marquilla'] ?? '';
+    $suela = $_POST['suela'] ?? '';
+    $ciudad = $_POST['ciudad'] ?? '';
+    $cantidad = $_POST['cantidad'] ?? '';
+    $tallas = isset($_POST['tallas']) ? json_encode($_POST['tallas']) : '[]';
 
-    $sql = "INSERT INTO pedidos (id, fecha, tique, cliente, ref, color, observaciones, tipo_calzado, marquilla, suela, ciudad, cantidad, tallas) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issssssssssss", $id, $fecha, $tique, $cliente, $ref, $color, $observaciones, $tipo_calzado, $marquilla, $suela, $ciudad, $cantidad, $tallas);
-    
-    if ($stmt->execute()) {
-        header("Location: ver_pedidos.php?success=1");
-        exit;
+    // Validar solo los campos obligatorios
+    if (empty($fecha)) {
+        $error = "La fecha es obligatoria";
     } else {
-        $error = "Error al guardar el pedido: " . $conn->error;
+        $sql = "INSERT INTO pedidos (id, fecha, tique, cliente, ref, color, observaciones, tipo_calzado, marquilla, suela, ciudad, cantidad, tallas) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt = $conn->prepare($sql);
+        
+        // Crear el número especificado de copias
+        $success = true;
+        for ($i = 0; $i < $num_copias; $i++) {
+            // Obtener el siguiente número de tique para cada copia
+            $result = $conn->query("SELECT MAX(CAST(tique AS UNSIGNED)) as max_tique FROM pedidos");
+            $row = $result->fetch_assoc();
+            $next_tique = $row['max_tique'] ? $row['max_tique'] + 1 : 1;
+            
+            $stmt->bind_param("issssssssssss", $id, $fecha, $next_tique, $cliente, $ref, $color, $observaciones, $tipo_calzado, $marquilla, $suela, $ciudad, $cantidad, $tallas);
+            
+            if (!$stmt->execute()) {
+                $error = "Error al guardar el pedido: " . $conn->error;
+                $success = false;
+                break;
+            }
+        }
+        
+        if ($success) {
+            header("Location: ver_pedidos.php?success=1");
+            exit;
+        }
     }
 }
 ?>
@@ -271,6 +290,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-color: #e9ecef !important;
             cursor: not-allowed;
         }
+
+        .btn-outline-secondary {
+            border: 2px solid #6c757d;
+            font-weight: 500;
+        }
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .btn-outline-secondary.active {
+            background-color: #6c757d;
+            color: white;
+        }
+        #numCopias:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 0.2rem var(--light-green);
+        }
     </style>
 </head>
 <body>
@@ -300,39 +337,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label required-field">Fecha</label>
+                                <label class="form-label">Fecha</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-calendar"></i>
                                     </span>
-                                    <input type="date" class="form-control" name="fecha" required value="<?php echo date('Y-m-d'); ?>">
+                                    <input type="date" class="form-control" name="fecha" value="<?php echo date('Y-m-d'); ?>">
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label required-field">Tique</label>
+                                <label class="form-label">Tique</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-ticket-alt"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="tique" required readonly value="<?php echo $next_tique; ?>">
+                                    <input type="text" class="form-control" name="tique" readonly value="<?php echo $next_tique; ?>">
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required-field">Cliente</label>
+                                <label class="form-label">Cliente</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-user"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="cliente" required>
+                                    <input type="text" class="form-control" name="cliente">
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required-field">Ciudad</label>
+                                <label class="form-label">Ciudad</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-map-marker-alt"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="ciudad" required>
+                                    <input type="text" class="form-control" name="ciudad">
                                 </div>
                             </div>
                         </div>
@@ -345,26 +382,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="row g-4">
                             <div class="col-md-6">
-                                <label class="form-label required-field">Referencia</label>
+                                <label class="form-label">Referencia</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-tag"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="ref" required>
+                                    <input type="text" class="form-control" name="ref">
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label required-field">Color</label>
+                                <label class="form-label">Color</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-palette"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="color" required>
+                                    <input type="text" class="form-control" name="color">
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required-field">Tipo de Calzado</label>
-                                <select class="form-select" name="tipo_calzado" id="tipoCalzado" required>
+                                <label class="form-label">Tipo de Calzado</label>
+                                <select class="form-select" name="tipo_calzado" id="tipoCalzado">
                                     <option value="">Seleccione...</option>
                                     <option value="caballero">Caballero</option>
                                     <option value="dama">Dama</option>
@@ -373,30 +410,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required-field">Marquilla</label>
+                                <label class="form-label">Marquilla</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-tag"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="marquilla" required>
+                                    <input type="text" class="form-control" name="marquilla">
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label required-field">Cantidad Total</label>
+                                <label class="form-label">Cantidad Total</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-hashtag"></i>
                                     </span>
-                                    <input type="number" class="form-control" name="cantidad" required>
+                                    <input type="number" class="form-control readonly-field" name="cantidad" id="cantidadTotal" readonly>
                                 </div>
                             </div>
                             <div class="col-12">
-                                <label class="form-label required-field">Suela</label>
+                                <label class="form-label">Suela</label>
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-shoe-prints"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="suela" required>
+                                    <input type="text" class="form-control" name="suela">
                                 </div>
                             </div>
                         </div>
@@ -421,10 +458,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div class="form-footer">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>
-                            Guardar Pedido
-                        </button>
+                        <div class="d-flex justify-content-end align-items-center gap-3">
+                            <div class="input-group" style="width: auto;">
+                                <button type="button" class="btn btn-outline-secondary" id="btnCopias" style="border-radius: 8px; padding: 10px 20px; transition: all 0.3s ease;">
+                                    <i class="fas fa-copy me-2"></i>
+                                    Copias
+                                </button>
+                                <input type="number" class="form-control" id="numCopias" name="num_copias" min="1" value="1" 
+                                    style="width: 80px; display: none; margin-left: 8px; border-radius: 8px; padding: 10px; border: 2px solid #dee2e6;">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="border-radius: 8px; padding: 10px 25px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <i class="fas fa-save me-2"></i>
+                                Guardar Pedido
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -435,6 +482,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         const tipoCalzado = document.getElementById('tipoCalzado');
         const tallasContainer = document.getElementById('tallasContainer');
+        const btnCopias = document.getElementById('btnCopias');
+        const numCopias = document.getElementById('numCopias');
+        const cantidadTotal = document.getElementById('cantidadTotal');
+
+        // Función para calcular el total de pares
+        function calcularTotalPares() {
+            const inputs = tallasContainer.querySelectorAll('.talla-input');
+            let total = 0;
+            inputs.forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            cantidadTotal.value = total;
+        }
+
+        // Lógica para mostrar/ocultar el campo de copias
+        btnCopias.addEventListener('click', function() {
+            if (numCopias.style.display === 'none') {
+                numCopias.style.display = 'block';
+                btnCopias.classList.add('active');
+            } else {
+                numCopias.style.display = 'none';
+                btnCopias.classList.remove('active');
+                numCopias.value = 1;
+            }
+        });
 
         const rangos = {
             'caballero': {min: 37, max: 45},
@@ -445,6 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         tipoCalzado.addEventListener('change', function() {
             tallasContainer.innerHTML = '';
+            cantidadTotal.value = '0'; // Resetear el total cuando cambia el tipo
             const tipo = this.value;
             
             if (tipo && rangos[tipo]) {
@@ -457,6 +530,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="number" class="talla-input" name="tallas[${i}]" min="0" value="0">
                     `;
                     tallasContainer.appendChild(div);
+
+                    // Agregar evento para calcular el total cuando cambia una talla
+                    const input = div.querySelector('.talla-input');
+                    input.addEventListener('input', calcularTotalPares);
                 }
             }
         });
