@@ -116,33 +116,11 @@ require_once 'config/database.php';
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="index.php">
-                <img src="includes/logo.png" alt="Strong Shoes Logo"> Strong Shoes
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="nuevo_pedido.php">
-                            <i class="fas fa-plus-circle"></i> Ingresar Pedido
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="ver_pedidos.php">
-                            <i class="fas fa-list"></i> Ver Pedidos
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-5">
-        <div class="row">
+        <!-- Acciones Principales -->
+        <div class="row mb-4">
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-body text-center">

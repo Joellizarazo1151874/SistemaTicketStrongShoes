@@ -18,6 +18,11 @@
                         <i class="fas fa-list"></i> Ver Pedidos
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="estadisticas.php" style="color: white; margin: 0 10px; padding: 8px 15px; transition: all 0.3s ease; border-radius: 5px;">
+                        <i class="fas fa-chart-bar"></i> Estadísticas
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
