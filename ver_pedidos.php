@@ -74,6 +74,15 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
             'defaultFont' => 'Helvetica'
         ]);
         
+        // Definir rangos por tipo de calzado antes de armar el HTML
+        $rangos = [
+            'caballero' => ['min' => 37, 'max' => 45],
+            'dama' => ['min' => 33, 'max' => 41],
+            'niño' => ['min' => 20, 'max' => 26],
+            'juvenil' => ['min' => 27, 'max' => 36]
+        ];
+        $rango = isset($rangos[$pedido['tipo_calzado']]) ? $rangos[$pedido['tipo_calzado']] : ['min' => '', 'max' => ''];
+
         // Contenido del PDF
         $html = '
         <style>
@@ -117,8 +126,8 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
                 text-align: left;
             }
             .obs-cell {
-                min-height: 37.5mm;
-                height: 37.5mm;
+                min-height: 25mm;
+                height: 25mm;
                 vertical-align: top;
             }
             .ticket-info .label {
@@ -177,6 +186,10 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
         <div class="ticket-info">
             <table>
                 <tr>
+                    <td><strong>Numeración:</strong> ' . $rango['min'] . ' - ' . $rango['max'] . ' | <strong>Cant. pares:</strong> ' . $pedido['cantidad'] . '</td>
+                    <td><strong>Suela:</strong> ' . $pedido['suela'] . '</td>
+                </tr>
+                <tr>
                     <td><strong>Fecha:</strong> ' . $pedido['fecha'] . '</td>
                     <td><strong>Ciudad:</strong> ' . $pedido['ciudad'] . '</td>
                 </tr>
@@ -198,15 +211,6 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
             </table>
         </div>';
 
-        // Obtener el rango de tallas según el tipo de calzado
-        $rangos = [
-            'caballero' => ['min' => 37, 'max' => 45],
-            'dama' => ['min' => 33, 'max' => 41],
-            'niño' => ['min' => 20, 'max' => 26],
-            'juvenil' => ['min' => 27, 'max' => 36]
-        ];
-
-        $rango = $rangos[$pedido['tipo_calzado']];
         $tallas = json_decode($pedido['tallas'], true);
 
         // Array de roles en el orden específico con su información

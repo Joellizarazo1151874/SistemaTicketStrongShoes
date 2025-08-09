@@ -44,7 +44,7 @@ foreach ($ids as $id) {
         .ticket-info { margin-bottom: 1mm; font-size: 8pt; text-align: left; }
         .ticket-info table { width: 100%; border-collapse: collapse; margin: 0 auto; }
         .ticket-info td { border: 1px solid #000; padding: 0.5mm 1mm; text-align: left; }
-        .obs-cell { min-height: 37.5mm; height: 37.5mm; vertical-align: top; }
+        .obs-cell { min-height: 25mm; height: 25mm; vertical-align: top; }
         .ticket-info .label { background: #f0f0f0; font-weight: bold; width: 25%; text-align: left; }
         .ticket-info .value { width: 25%; text-align: left; }
         .tallas-section { margin-bottom: 1mm; }
@@ -70,12 +70,31 @@ foreach ($ids as $id) {
     $suela = htmlspecialchars($pedido['suela'] ?? '');
     $cantidad = htmlspecialchars($pedido['cantidad'] ?? '0');
 
+    // Rango de tallas (mover antes para usarlo en cabecera del ticket)
+    $rangos = [
+        'caballero' => ['min' => 37, 'max' => 45],
+        'dama' => ['min' => 33, 'max' => 41],
+        'niño' => ['min' => 20, 'max' => 26],
+        'juvenil' => ['min' => 27, 'max' => 36]
+    ];
+
+    // Verificar que el tipo de calzado existe en los rangos
+    if (!isset($rangos[$tipo_calzado])) {
+        continue;
+    }
+
+    $rango = $rangos[$tipo_calzado];
+
     $html .= '<div class="header">
         <h2>STRONG SHOES</h2>
         <div>TICKET DE PEDIDO</div>
     </div>';
     $html .= '<div class="ticket-info">
         <table>
+            <tr>
+                <td><strong>Numeración:</strong> ' . $rango['min'] . ' - ' . $rango['max'] . ' | <strong>Cant. pares:</strong> ' . $cantidad . '</td>
+                <td><strong>Suela:</strong> ' . $suela . '</td>
+            </tr>
             <tr>
                 <td><strong>Fecha:</strong> ' . $fecha . '</td>
                 <td><strong>Ciudad:</strong> ' . $ciudad . '</td>
@@ -98,20 +117,6 @@ foreach ($ids as $id) {
         </table>
     </div>';
 
-    // Rango de tallas
-    $rangos = [
-        'caballero' => ['min' => 37, 'max' => 45],
-        'dama' => ['min' => 33, 'max' => 41],
-        'niño' => ['min' => 20, 'max' => 26],
-        'juvenil' => ['min' => 27, 'max' => 36]
-    ];
-
-    // Verificar que el tipo de calzado existe en los rangos
-    if (!isset($rangos[$tipo_calzado])) {
-        continue;
-    }
-
-    $rango = $rangos[$tipo_calzado];
     $tallas = json_decode($pedido['tallas'] ?? '[]', true) ?: [];
 
     $roles = [

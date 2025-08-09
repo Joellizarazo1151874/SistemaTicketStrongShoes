@@ -39,4 +39,66 @@ $sql = "CREATE TABLE IF NOT EXISTS pedidos (
 if (!$conn->query($sql)) {
     die("Error creando la tabla: " . $conn->error);
 }
+
+// Crear tablas para facturación si no existen
+// Tabla principal de facturas
+$sql = "CREATE TABLE IF NOT EXISTS facturas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero INT UNIQUE,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    cliente VARCHAR(150),
+    nit VARCHAR(50),
+    direccion VARCHAR(200),
+    ciudad VARCHAR(100),
+    telefono VARCHAR(50),
+    observaciones TEXT,
+    total DECIMAL(12,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+
+if (!$conn->query($sql)) {
+    die("Error creando la tabla facturas: " . $conn->error);
+}
+
+// Asegurar columnas nuevas en facturas (migraciones ligeras)
+$col = $conn->query("SHOW COLUMNS FROM facturas LIKE 'nit'");
+if ($col && $col->num_rows === 0) {
+    if (!$conn->query("ALTER TABLE facturas ADD COLUMN nit VARCHAR(50) AFTER cliente")) {
+        die("Error agregando columna nit: " . $conn->error);
+    }
+}
+
+$col = $conn->query("SHOW COLUMNS FROM facturas LIKE 'direccion'");
+if ($col && $col->num_rows === 0) {
+    if (!$conn->query("ALTER TABLE facturas ADD COLUMN direccion VARCHAR(200) AFTER nit")) {
+        die("Error agregando columna direccion: " . $conn->error);
+    }
+}
+
+// Tabla de ítems de factura
+$sql = "CREATE TABLE IF NOT EXISTS factura_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    factura_id INT NOT NULL,
+    ref VARCHAR(100),
+    color VARCHAR(100),
+    cantidad INT DEFAULT 0,
+    valor_unitario DECIMAL(12,2) DEFAULT 0,
+    subtotal DECIMAL(12,2) DEFAULT 0,
+    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+)";
+
+if (!$conn->query($sql)) {
+    die("Error creando la tabla factura_items: " . $conn->error);
+}
+
+// Generar un número consecutivo inicial si no existe
+$result = $conn->query("SELECT MAX(numero) AS max_num FROM facturas");
+if ($result) {
+    $row = $result->fetch_assoc();
+    if (!$row || $row['max_num'] === null) {
+        // Insertar una factura ficticia para iniciar la numeración en 1000 y eliminarla
+        $conn->query("INSERT INTO facturas (numero, cliente, total) VALUES (1000, 'INICIAL', 0)");
+        $conn->query("DELETE FROM facturas WHERE cliente='INICIAL' AND total=0 ORDER BY id DESC LIMIT 1");
+    }
+}
 ?> 
