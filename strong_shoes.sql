@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 09-08-2025 a las 22:00:40
+-- Tiempo de generación: 10-08-2025 a las 06:05:36
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,6 +20,57 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `strong_shoes`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `facturas`
+--
+
+CREATE TABLE `facturas` (
+  `id` int(11) NOT NULL,
+  `numero` int(11) DEFAULT NULL,
+  `fecha` datetime DEFAULT current_timestamp(),
+  `cliente` varchar(150) DEFAULT NULL,
+  `nit` varchar(50) DEFAULT NULL,
+  `direccion` varchar(200) DEFAULT NULL,
+  `ciudad` varchar(100) DEFAULT NULL,
+  `telefono` varchar(50) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `total` decimal(12,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `facturas`
+--
+
+INSERT INTO `facturas` (`id`, `numero`, `fecha`, `cliente`, `nit`, `direccion`, `ciudad`, `telefono`, `observaciones`, `total`, `created_at`) VALUES
+(14, 1000, '2025-08-09 15:57:03', 'RICARDO JUNIOR', '217', 'calle 8 # 14 - 56 Barrio gramalote / Villa del rosario', 'Villa Del Rosario', '3209939817', '', 504000.00, '2025-08-09 20:57:03');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `factura_items`
+--
+
+CREATE TABLE `factura_items` (
+  `id` int(11) NOT NULL,
+  `factura_id` int(11) NOT NULL,
+  `ref` varchar(100) DEFAULT NULL,
+  `color` varchar(100) DEFAULT NULL,
+  `cantidad` int(11) DEFAULT 0,
+  `valor_unitario` decimal(12,2) DEFAULT 0.00,
+  `subtotal` decimal(12,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `factura_items`
+--
+
+INSERT INTO `factura_items` (`id`, `factura_id`, `ref`, `color`, `cantidad`, `valor_unitario`, `subtotal`) VALUES
+(1, 14, '23', 'claro', 12, 20000.00, 240000.00),
+(2, 14, '32', 'verde', 12, 22000.00, 264000.00);
 
 -- --------------------------------------------------------
 
@@ -552,6 +603,50 @@ INSERT INTO `pedidos` (`id`, `fecha`, `tique`, `cliente`, `ref`, `color`, `obser
 (254, '2025-08-06', '248', 'DIEGO VELASQUEZ', '500', 'NEGRO X MIEL', 'DANI VAINILLA \r\n26 PARES', 'caballero', 'STRONG SHOES', 'DANI VAINILLA', 'MEDELLIN', 26, '{\"37\":\"4\",\"38\":\"6\",\"39\":\"8\",\"40\":\"8\",\"41\":\"0\",\"42\":\"0\",\"43\":\"0\",\"44\":\"0\",\"45\":\"0\"}', '2025-08-06 20:27:15'),
 (255, '2025-08-06', '249', 'DIEGO VELASQUEZ', '500', 'CAFE X MIEL', 'DANI VAINILLA\r\n22 PARES', 'caballero', 'STRONG SHOES', 'DANI VAINILLA', 'MEDELLIN', 22, '{\"37\":\"0\",\"38\":\"0\",\"39\":\"0\",\"40\":\"0\",\"41\":\"8\",\"42\":\"8\",\"43\":\"6\",\"44\":\"0\",\"45\":\"0\"}', '2025-08-06 20:28:43'),
 (256, '2025-08-06', '250', 'DIEGO VELASQUEZ', '500', 'NEGRO X MIEL', 'DANI VAINILLA\r\n22 PARES', 'caballero', 'STRONG SHOES', 'DANI VAINILLA', 'MEDELLIN', 22, '{\"37\":\"0\",\"38\":\"0\",\"39\":\"0\",\"40\":\"0\",\"41\":\"8\",\"42\":\"8\",\"43\":\"6\",\"44\":\"0\",\"45\":\"0\"}', '2025-08-06 20:28:43');
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `facturas`
+--
+ALTER TABLE `facturas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `numero` (`numero`);
+
+--
+-- Indices de la tabla `factura_items`
+--
+ALTER TABLE `factura_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `factura_id` (`factura_id`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `facturas`
+--
+ALTER TABLE `facturas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `factura_items`
+--
+ALTER TABLE `factura_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `factura_items`
+--
+ALTER TABLE `factura_items`
+  ADD CONSTRAINT `factura_items_ibfk_1` FOREIGN KEY (`factura_id`) REFERENCES `facturas` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -15,39 +15,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telefono = $_POST['telefono'] ?? '';
     $observaciones = $_POST['observaciones'] ?? '';
     $numero = isset($_POST['numero']) ? (int)$_POST['numero'] : $nextNumero;
+    $numCopias = isset($_POST['num_copias']) ? max(1, (int)$_POST['num_copias']) : 1;
 
     $refs = $_POST['ref'] ?? [];
     $colors = $_POST['color'] ?? [];
     $cants = $_POST['cantidad'] ?? [];
     $vus = $_POST['valor_unitario'] ?? [];
 
-    // Crear factura
-    $stmt = $conn->prepare("INSERT INTO facturas (numero, cliente, nit, direccion, ciudad, telefono, observaciones, total) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
-    $stmt->bind_param('issssss', $numero, $cliente, $nit, $direccion, $ciudad, $telefono, $observaciones);
-    $stmt->execute();
-    $facturaId = $stmt->insert_id;
+    // Crear una o varias copias de la factura
+    $lastFacturaId = null;
+    for ($copy = 0; $copy < $numCopias; $copy++) {
+        // Calcular el siguiente número consecutivo en cada iteración
+        $resNum = $conn->query("SELECT COALESCE(MAX(numero),999) + 1 AS next_num FROM facturas");
+        $rowNum = $resNum->fetch_assoc();
+        $numeroActual = (int)$rowNum['next_num'];
 
-    $total = 0;
-    $itemStmt = $conn->prepare("INSERT INTO factura_items (factura_id, ref, color, cantidad, valor_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO facturas (numero, cliente, nit, direccion, ciudad, telefono, observaciones, total) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        $stmt->bind_param('issssss', $numeroActual, $cliente, $nit, $direccion, $ciudad, $telefono, $observaciones);
+        $stmt->execute();
+        $facturaId = $stmt->insert_id;
+        $lastFacturaId = $facturaId;
 
-    for ($i = 0; $i < count($refs); $i++) {
-        $ref = trim($refs[$i] ?? '');
-        $color = trim($colors[$i] ?? '');
-        $cantidad = (int)($cants[$i] ?? 0);
-        $vu = (float)($vus[$i] ?? 0);
-        if ($ref === '' && $color === '' && $cantidad === 0 && $vu === 0) continue;
-        $subtotal = $cantidad * $vu;
-        $total += $subtotal;
-        $itemStmt->bind_param('issidd', $facturaId, $ref, $color, $cantidad, $vu, $subtotal);
-        $itemStmt->execute();
+        $total = 0;
+        $itemStmt = $conn->prepare("INSERT INTO factura_items (factura_id, ref, color, cantidad, valor_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)");
+        for ($i = 0; $i < count($refs); $i++) {
+            $ref = trim($refs[$i] ?? '');
+            $color = trim($colors[$i] ?? '');
+            $cantidad = (int)($cants[$i] ?? 0);
+            $vu = (float)($vus[$i] ?? 0);
+            if ($ref === '' && $color === '' && $cantidad === 0 && $vu === 0) continue;
+            $subtotal = $cantidad * $vu;
+            $total += $subtotal;
+            $itemStmt->bind_param('issidd', $facturaId, $ref, $color, $cantidad, $vu, $subtotal);
+            $itemStmt->execute();
+        }
+
+        // Actualizar total de la copia
+        $upd = $conn->prepare("UPDATE facturas SET total = ? WHERE id = ?");
+        $upd->bind_param('di', $total, $facturaId);
+        $upd->execute();
     }
 
-    // Actualizar total
-    $upd = $conn->prepare("UPDATE facturas SET total = ? WHERE id = ?");
-    $upd->bind_param('di', $total, $facturaId);
-    $upd->execute();
-
-    header("Location: imprimir_factura.php?id=" . $facturaId);
+    header("Location: imprimir_factura.php?id=" . $lastFacturaId);
     exit;
 }
 ?>
@@ -83,6 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border: none;
         padding: 1.25rem;
     }
+    .items-header { display: flex; align-items: center; justify-content: space-between; }
+    .items-header h5 { margin: 0; }
+    .items-add-btn { border-radius: 999px; padding: 0.35rem 0.85rem; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
 
     .card-body { padding: 2rem; }
 
@@ -121,29 +133,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .btn-outline-danger { border-radius: 8px; }
 
     .table { border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 0; }
-    .table thead th { background-color: var(--primary-green); color: white; font-weight: 600; border: none; padding: 1rem; white-space: nowrap; }
-    .table tbody td { padding: 1.2rem 1.5rem; vertical-align: middle; border-color: var(--border-color); color: #2c3e50; }
+    .table thead th { background: linear-gradient(0deg, var(--primary-green), var(--primary-green)); color: white; font-weight: 700; border: none; padding: 0.9rem 1rem; white-space: nowrap; letter-spacing: .3px; }
+    .table tbody td { padding: 0.9rem 1rem; vertical-align: middle; border-color: var(--border-color); color: #2c3e50; }
     .table tbody tr:hover { background-color: var(--light-green); }
+    .table tfoot th, .table tfoot td { padding: 0.9rem 1rem; }
 
     .subtotal, #total { font-weight: 600; }
     .card-footer { padding: 1.25rem; }
 
     /* Mantener vertical alignment de celdas */
     .table td, .table th { vertical-align: middle; }
+    .number-input { text-align: right; }
+    .btn-icon { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .fade-in { animation: fadeIn .25s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
     </style>
     <script>
     function addRow() {
         const tbody = document.getElementById('items-body');
         const row = document.createElement('tr');
+        row.className = 'fade-in';
         row.innerHTML = `
-            <td><input name="ref[]" class="form-control"/></td>
-            <td><input name="color[]" class="form-control"/></td>
-            <td><input name="cantidad[]" type="number" min="0" class="form-control" oninput="recalc(this)"/></td>
-            <td><input name="valor_unitario[]" type="number" min="0" step="0.01" class="form-control" oninput="recalc(this)"/></td>
+            <td><input name="ref[]" class="form-control" placeholder="Ref..."/></td>
+            <td><input name="color[]" class="form-control" placeholder="Color..."/></td>
+            <td><input name="cantidad[]" type="number" min="0" class="form-control number-input" placeholder="0" oninput="recalc(this)"/></td>
+            <td><input name="valor_unitario[]" type="number" min="0" step="0.01" class="form-control number-input" placeholder="0" oninput="recalc(this)"/></td>
             <td class="text-end subtotal">$0</td>
-            <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
+            <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm btn-icon" title="Eliminar" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
         `;
         tbody.appendChild(row);
+        const firstInput = row.querySelector('input[name="ref[]"]');
+        if (firstInput) firstInput.focus();
     }
     function removeRow(btn) {
         const row = btn.closest('tr');
@@ -216,9 +236,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Items</h6>
-                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addRow()"><i class="fas fa-plus"></i> Agregar fila</button>
+            <div class="card-header items-header">
+                <h5 class="mb-0">Items</h5>
+                <button type="button" class="btn btn-outline-light btn-sm items-add-btn" onclick="addRow()"><i class="fas fa-plus me-1"></i> Agregar fila</button>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -227,20 +247,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <tr>
                                 <th>Ref</th>
                                 <th>Color</th>
-                                <th style="width: 120px;">Cant</th>
-                                <th style="width: 170px;">V. Unitario</th>
+                                <th class="text-end" style="width: 120px;">Cant</th>
+                                <th class="text-end" style="width: 170px;">V. Unitario</th>
                                 <th class="text-end" style="width: 160px;">Subtotal</th>
                                 <th class="text-end" style="width: 80px;"></th>
                             </tr>
                         </thead>
                         <tbody id="items-body">
                             <tr>
-                                <td><input name="ref[]" class="form-control"/></td>
-                                <td><input name="color[]" class="form-control"/></td>
-                                <td><input name="cantidad[]" type="number" min="0" class="form-control" oninput="recalc(this)"/></td>
-                                <td><input name="valor_unitario[]" type="number" min="0" step="0.01" class="form-control" oninput="recalc(this)"/></td>
+                                <td><input name="ref[]" class="form-control" placeholder="Ref..."/></td>
+                                <td><input name="color[]" class="form-control" placeholder="Color..."/></td>
+                                <td><input name="cantidad[]" type="number" min="0" class="form-control number-input" placeholder="0" oninput="recalc(this)"/></td>
+                                <td><input name="valor_unitario[]" type="number" min="0" step="0.01" class="form-control number-input" placeholder="0" oninput="recalc(this)"/></td>
                                 <td class="text-end subtotal">$0</td>
-                                <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
+                                <td class="text-end"><button type="button" class="btn btn-outline-danger btn-sm btn-icon" title="Eliminar" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
                             </tr>
                         </tbody>
                         <tfoot>
@@ -253,7 +273,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </table>
                 </div>
             </div>
-            <div class="card-footer d-flex justify-content-end">
+            <div class="card-footer d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                <div class="d-flex align-items-center gap-2 me-auto">
+                    <button type="button" class="btn btn-outline-secondary" id="btnCopiasFactura" title="Copias" style="border-radius: 8px; padding: 10px 16px;">
+                        <i class="fas fa-copy me-2"></i> Copias
+                    </button>
+                    <input type="number" class="form-control" id="numCopiasFactura" name="num_copias" min="1" value="1"
+                        style="width: 90px; display: none; border-radius: 8px;">
+                </div>
                 <button class="btn btn-primary"><i class="fas fa-save"></i> Guardar e Imprimir</button>
             </div>
         </div>
@@ -261,6 +288,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Copias para factura (igual patrón que pedido)
+    (function(){
+        const btn = document.getElementById('btnCopiasFactura');
+        const input = document.getElementById('numCopiasFactura');
+        if (!btn || !input) return;
+        btn.addEventListener('click', function(){
+            if (input.style.display === 'none') {
+                input.style.display = 'block';
+                btn.classList.add('active');
+            } else {
+                input.style.display = 'none';
+                btn.classList.remove('active');
+                input.value = 1;
+            }
+        });
+    })();
+</script>
 </body>
 </html>
 
