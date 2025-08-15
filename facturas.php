@@ -47,7 +47,7 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facturas - Strong Shoes</title>
+    <title>Remisiones - Strong Shoes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -71,6 +71,11 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
         .btn-primary { background-color: var(--primary-green) !important; border-color: var(--primary-green) !important; padding: 10px 20px; font-weight: 500; transition: all 0.3s ease; border-radius: 8px; }
         .btn-primary:hover { background-color: var(--hover-green) !important; border-color: var(--hover-green) !important; transform: translateY(-2px); }
         .btn-outline-secondary { border-radius: 8px; }
+        .btn-outline-primary { color: var(--primary-green) !important; border-color: var(--primary-green) !important; background-color: transparent; padding: 10px 20px; font-weight: 500; transition: all 0.3s ease; border-radius: 8px; }
+        .btn-outline-primary:hover { color: #fff !important; background-color: var(--primary-green) !important; transform: translateY(-2px); }
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; font-weight: 500; border-radius: 8px; transition: all 0.3s ease; }
+        .btn-sm { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+        .btn i { font-size: 1rem; }
 
         .table { border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 0; }
         .table thead th { background-color: var(--primary-green); color: white; font-weight: 600; border: none; padding: 1rem; white-space: nowrap; }
@@ -80,6 +85,7 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
         .table-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid var(--border-color); }
         .table-title { display: flex; align-items: center; gap: 0.75rem; margin: 0; color: #2c3e50; }
         .table-actions { display: flex; gap: 1rem; }
+        .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
         .search-form { background-color: white; padding: 2rem; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 2rem; }
         .empty-state { text-align: center; padding: 3rem; color: #6c757d; }
@@ -117,7 +123,7 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
                aria-expanded="<?php echo isset($_GET['search']) ? 'true' : 'false'; ?>"
                aria-controls="filterCollapseFacturas">
                 <i class="fas fa-search"></i>
-                <h4 class="mb-0">Filtrar Facturas</h4>
+                <h4 class="mb-0">Filtrar Remisiones</h4>
                 <i class="fas fa-chevron-down toggle-icon ms-auto"></i>
             </a>
         </div>
@@ -154,9 +160,9 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
 
     <div class="card">
         <div class="table-header">
-            <h4 class="table-title"><i class="fas fa-file-invoice"></i> Lista de Facturas</h4>
+            <h4 class="table-title"><i class="fas fa-file-invoice"></i> Lista de Remisiones</h4>
             <div class="table-actions">
-                <a href="nueva_factura.php" class="btn btn-primary"><i class="fas fa-plus"></i> Nueva Factura</a>
+                <a href="nueva_factura.php" class="btn btn-primary"><i class="fas fa-plus"></i> Nueva Remision</a>
             </div>
         </div>
         <div class="card-body p-0">
@@ -178,8 +184,8 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
                             <td colspan="6">
                                 <div class="empty-state">
                                     <i class="fas fa-box-open"></i>
-                                    <h5 class="mt-2">No se encontraron facturas</h5>
-                                    <p class="mb-0">Ajusta los filtros o crea una nueva factura.</p>
+                                    <h5 class="mt-2">No se encontraron Remisiones</h5>
+                                    <p class="mb-0">Ajusta los filtros o crea una nueva Remision.</p>
                                 </div>
                             </td>
                         </tr>
@@ -192,7 +198,10 @@ $facturas = $result->fetch_all(MYSQLI_ASSOC);
                             <td><?php echo htmlspecialchars($f['ciudad']); ?></td>
                             <td>$<?php echo number_format((float)$f['total'], 0, ',', '.'); ?></td>
                             <td class="text-end">
-                                <a href="imprimir_factura.php?id=<?php echo $f['id']; ?>" target="_blank" class="btn btn-primary btn-sm" title="Imprimir"><i class="fas fa-print"></i></a>
+                                <div class="action-buttons">
+                                    <a href="editar_factura.php?id=<?php echo $f['id']; ?>" class="btn btn-outline-primary btn-sm" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="imprimir_factura.php?id=<?php echo $f['id']; ?>" target="_blank" class="btn btn-primary btn-sm" title="Imprimir"><i class="fas fa-print"></i></a>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>

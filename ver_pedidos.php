@@ -126,8 +126,8 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
                 text-align: left;
             }
             .obs-cell {
-                min-height: 25mm;
-                height: 25mm;
+                min-height: 14mm;
+                height: 14mm;
                 vertical-align: top;
             }
             .ticket-info .label {
@@ -206,7 +206,20 @@ if (isset($_GET['pdf']) && isset($_GET['id'])) {
                     <td><strong>Cliente:</strong> ' . $pedido['cliente'] . '</td>
                 </tr>
                 <tr>
-                    <td colspan="2" class="obs-cell"><strong>Obs:</strong> ' . $pedido['observaciones'] . '<br><br><br></td>
+                    <td colspan="2">
+                        <div class="tallas-section">
+                            <div class="tallas-title">NUMERACIÓN</div>
+                            <table class="tallas-table"><tr>';
+        for ($i = $rango['min']; $i <= $rango['max']; $i++) { $html .= '<th>' . $i . '</th>'; }
+        $html .= '</tr><tr>';
+        $tallas = json_decode($pedido['tallas'], true);
+        for ($i = $rango['min']; $i <= $rango['max']; $i++) { $valor = isset($tallas[$i]) ? $tallas[$i] : '0'; $html .= '<td>' . $valor . '</td>'; }
+        $html .= '</tr></table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="obs-cell"><strong>Obs:</strong> ' . $pedido['observaciones'] . '</td>
                 </tr>
             </table>
         </div>';

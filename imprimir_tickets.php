@@ -44,7 +44,7 @@ foreach ($ids as $id) {
         .ticket-info { margin-bottom: 1mm; font-size: 8pt; text-align: left; }
         .ticket-info table { width: 100%; border-collapse: collapse; margin: 0 auto; }
         .ticket-info td { border: 1px solid #000; padding: 0.5mm 1mm; text-align: left; }
-        .obs-cell { min-height: 25mm; height: 25mm; vertical-align: top; }
+        .obs-cell { min-height: 14mm; height: 14mm; vertical-align: top; }
         .ticket-info .label { background: #f0f0f0; font-weight: bold; width: 25%; text-align: left; }
         .ticket-info .value { width: 25%; text-align: left; }
         .tallas-section { margin-bottom: 1mm; }
@@ -84,6 +84,7 @@ foreach ($ids as $id) {
     }
 
     $rango = $rangos[$tipo_calzado];
+    $tallas = json_decode($pedido['tallas'] ?? '[]', true) ?: [];
 
     $html .= '<div class="header">
         <h2>STRONG SHOES</h2>
@@ -110,14 +111,23 @@ foreach ($ids as $id) {
             <tr>
                 <td><strong>Tique:</strong> ' . $tique . '</td>
                 <td><strong>Cliente:</strong> ' . $cliente . '</td>
-            </tr>
-            <tr>
-                <td colspan="2" class="obs-cell"><strong>Obs:</strong> ' . $observaciones . '<br><br><br></td>
+            </tr>';
+    // Agregar tabla compacta de numeración antes de Observaciones
+    $html .= '<tr><td colspan="2">'
+          . '<div class="tallas-section">'
+          . '<div class="tallas-title">NUMERACIÓN</div>'
+          . '<table class="tallas-table"><tr>';
+    for ($i = $rango['min']; $i <= $rango['max']; $i++) { $html .= '<th>' . $i . '</th>'; }
+    $html .= '</tr><tr>';
+    for ($i = $rango['min']; $i <= $rango['max']; $i++) { $val = isset($tallas[$i]) ? $tallas[$i] : '0'; $html .= '<td>' . $val . '</td>'; }
+    $html .= '</tr></table></div></td></tr>';
+    $html .= '    <tr>
+                <td colspan="2" class="obs-cell"><strong>Obs:</strong> ' . $observaciones . '</td>
             </tr>
         </table>
     </div>';
 
-    $tallas = json_decode($pedido['tallas'] ?? '[]', true) ?: [];
+    
 
     $roles = [
         'LIMPIADA' => [

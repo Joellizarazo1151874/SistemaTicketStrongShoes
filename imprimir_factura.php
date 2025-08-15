@@ -65,7 +65,7 @@ $html = '<style>
 $html .= '<div class="header">
     <div class="brand-line">
         <div class="brand">' . htmlspecialchars(COMPANY_NAME) . ' <small>' . htmlspecialchars(COMPANY_SUBTITLE) . '</small></div>
-        <div class="inv-badge">Factura Nº ' . (int)$factura['numero'] . '</div>
+        <div class="inv-badge">Remisión Nº ' . (int)$factura['numero'] . '</div>
     </div>
     <div class="owner">' . htmlspecialchars(COMPANY_OWNER) . ' · Nit: ' . htmlspecialchars(COMPANY_NIT) . '</div>
     <div class="info">' . htmlspecialchars(COMPANY_ADDRESS) . ' | ' . htmlspecialchars(COMPANY_PHONES) . '</div>
@@ -75,11 +75,14 @@ $html .= '<div class="box">
     <div class="row">
         <div><span class="label">Fecha:</span> ' . htmlspecialchars(date('d/m/Y H:i', strtotime($factura['fecha']))) . '</div>
         <div><span class="label">Cliente:</span> ' . htmlspecialchars($factura['cliente'] ?? '') . '</div>
-        <div><span class="label">Tel:</span> ' . htmlspecialchars($factura['telefono'] ?? '') . '</div>
+        <div><span class="label">Almacén:</span> ' . htmlspecialchars($factura['almacen'] ?? '') . '</div>
     </div>
     <div class="row" style="margin-top:2mm">
         <div><span class="label">Ciudad:</span> ' . htmlspecialchars($factura['ciudad'] ?? '') . '</div>
         <div><span class="label">NIT:</span> ' . htmlspecialchars($factura['nit'] ?? '') . '</div>
+        <div><span class="label">Tel:</span> ' . htmlspecialchars($factura['telefono'] ?? '') . '</div>
+    </div>
+    <div class="row" style="margin-top:2mm">
         <div><span class="label">Dirección:</span> ' . htmlspecialchars($factura['direccion'] ?? '') . '</div>
     </div>
 </div>';
@@ -125,7 +128,7 @@ $html .= '<div class="box obs" style="margin-top:5mm; background:#fff;"><span cl
 $dompdf->loadHtml($html);
 $dompdf->setPaper('letter', 'portrait');
 $dompdf->render();
-$dompdf->stream('factura-' . (int)$factura['numero'] . '.pdf', ['Attachment' => false]);
+$dompdf->stream('Remisión-' . (int)$factura['numero'] . '.pdf', ['Attachment' => false]);
 exit;
 
 

@@ -9,6 +9,7 @@ $nextNumero = (int)$row['next_num'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cliente = $_POST['cliente'] ?? '';
+    $almacen = $_POST['almacen'] ?? '';
     $nit = $_POST['nit'] ?? '';
     $direccion = $_POST['direccion'] ?? '';
     $ciudad = $_POST['ciudad'] ?? '';
@@ -30,8 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rowNum = $resNum->fetch_assoc();
         $numeroActual = (int)$rowNum['next_num'];
 
-        $stmt = $conn->prepare("INSERT INTO facturas (numero, cliente, nit, direccion, ciudad, telefono, observaciones, total) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
-        $stmt->bind_param('issssss', $numeroActual, $cliente, $nit, $direccion, $ciudad, $telefono, $observaciones);
+        $stmt = $conn->prepare("INSERT INTO facturas (numero, cliente, almacen, nit, direccion, ciudad, telefono, observaciones, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
+        $stmt->bind_param('isssssss', $numeroActual, $cliente, $almacen, $nit, $direccion, $ciudad, $telefono, $observaciones);
         $stmt->execute();
         $facturaId = $stmt->insert_id;
         $lastFacturaId = $facturaId;
@@ -65,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nueva Factura - Strong Shoes</title>
+    <title>Nueva Remision - Strong Shoes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -199,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST">
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Nueva Factura</h5>
+                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Nueva Remision</h5>
                 <div>
                     <label class="me-2">Número</label>
                     <input type="number" name="numero" class="form-control d-inline-block" style="width: 140px" value="<?php echo $nextNumero; ?>">
@@ -210,6 +211,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="col-md-4">
                         <label class="form-label">Cliente</label>
                         <input type="text" name="cliente" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Almacén</label>
+                        <input type="text" name="almacen" class="form-control" placeholder="Sucursal / Punto de venta">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">NIT</label>

@@ -47,6 +47,7 @@ $sql = "CREATE TABLE IF NOT EXISTS facturas (
     numero INT UNIQUE,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
     cliente VARCHAR(150),
+    almacen VARCHAR(100),
     nit VARCHAR(50),
     direccion VARCHAR(200),
     ciudad VARCHAR(100),
@@ -72,6 +73,14 @@ $col = $conn->query("SHOW COLUMNS FROM facturas LIKE 'direccion'");
 if ($col && $col->num_rows === 0) {
     if (!$conn->query("ALTER TABLE facturas ADD COLUMN direccion VARCHAR(200) AFTER nit")) {
         die("Error agregando columna direccion: " . $conn->error);
+    }
+}
+
+// Agregar columna almacen si falta
+$col = $conn->query("SHOW COLUMNS FROM facturas LIKE 'almacen'");
+if ($col && $col->num_rows === 0) {
+    if (!$conn->query("ALTER TABLE facturas ADD COLUMN almacen VARCHAR(100) AFTER cliente")) {
+        die("Error agregando columna almacen: " . $conn->error);
     }
 }
 

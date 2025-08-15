@@ -25,7 +25,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="facturas.php" style="color: white; margin: 0 10px; padding: 8px 15px; transition: all 0.3s ease; border-radius: 5px;">
-                        <i class="fas fa-file-invoice"></i> Facturas
+                        <i class="fas fa-file-invoice"></i> Remisiones
                     </a>
                 </li>
             </ul>
